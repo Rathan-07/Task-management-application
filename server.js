@@ -29,7 +29,7 @@ const taskSchema = new Schema({
 const Task = model('Task',taskSchema)
 
 //TaskSchema Validation
-const taskvalidationSchema = {
+const taskValidationSchema = {
 
     title:{
         in:['body'],
@@ -78,10 +78,6 @@ const taskvalidationSchema = {
             errorMessage:"status  cannot be empty"
         },
         trim:true,
-        isLength:{
-            options:{min:5,max:25},
-            errorMessage:"title should  have atleast min char "
-        },
         isIn:{
             options:[['pending','inProgress','completed']],
             errorMessage:'status should be one of (pending, inProgress,completed)'
@@ -94,8 +90,10 @@ const taskvalidationSchema = {
 const updateTaskvalidationSchema = {
 
     title:{
-        in:['body'],
-      
+        in:['body'], 
+        exists:{
+            errorMessage:"title field is required"
+        },
         notEmpty:{
             errorMessage:"title cannot be empty"
         },
@@ -104,19 +102,7 @@ const updateTaskvalidationSchema = {
             options:{min:5,max:25},
             errorMessage:"title should  have atleast min char "
         },
-        custom:{
-            options:function(value){
-                return Task.findOne({title:value})
-                .then((obj)=>{
-                    if(obj){
-                       
-                        throw new Error('title name is already exists')
-                }
-                return true
-                })
-            
-            }
-        }
+    
         
     },
     description:{
@@ -147,7 +133,7 @@ const updateTaskvalidationSchema = {
 
 // id validationSchema
 
-const idvalidationSchema = {
+const idValidationSchema = {
     id:{
         in:['params'],
         isMongoId:{
@@ -157,15 +143,15 @@ const idvalidationSchema = {
 }
 // Post Request
 
-app.post('/tasks',checkSchema(taskvalidationSchema),(req,res)=>{
+app.post('/tasks',checkSchema(taskValidationSchema),(req,res)=>{
     const errors = validationResult(req)
     if(!errors.isEmpty()){
-        return res.status(404).json({errors:errors.array()})
+        return res.status(400).json({errors:errors.array()})
     }
     const body = req.body
     Task.create(body)
     .then((tasks)=>{
-        res.json(tasks)
+        res.status(201).json(tasks)
     })
     .catch((err)=>{
       res.json(err)  
@@ -185,10 +171,10 @@ app.get('/tasks',(req,res)=>{
 
 // Get request -single tasks
 
-app.get('/tasks/:id',checkSchema(idvalidationSchema),(req,res)=>{
+app.get('/tasks/:id',checkSchema(idValidationSchema),(req,res)=>{
     const errors = validationResult(req)
     if(!errors.isEmpty()){
-        return res.status(404).json({errors:errors.array()})
+        return res.status(400).json({errors:errors.array()})
     }
     const id = req.params.id
     Task.findById(id)
@@ -205,10 +191,10 @@ app.get('/tasks/:id',checkSchema(idvalidationSchema),(req,res)=>{
 
 //put request - update task
 
-app.put('/tasks/:id',checkSchema(updateTaskvalidationSchema),checkSchema(idvalidationSchema),(req,res)=>{
+app.put('/tasks/:id',checkSchema(updateTaskvalidationSchema),checkSchema(idValidationSchema),(req,res)=>{
     const errors = validationResult(req)
     if(!errors.isEmpty()){
-        return res.status(404).json({errors:errors.array()})
+        return res.status(400).json({errors:errors.array()})
     }
     const id = req.params.id
     const body = req.body
@@ -224,10 +210,10 @@ app.put('/tasks/:id',checkSchema(updateTaskvalidationSchema),checkSchema(idvalid
     })
 })
 // Delete request 
-app.delete('/tasks/:id',checkSchema(idvalidationSchema),(req,res)=>{
+app.delete('/tasks/:id',checkSchema(idValidationSchema),(req,res)=>{
     const errors = validationResult(req)
     if(!errors.isEmpty()){
-        return res.status(404).json({errors:errors.array()})
+        return res.status(400).json({errors:errors.array()})
     }
     const id = req.params.id
    
