@@ -1,3 +1,4 @@
+
 const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
@@ -7,7 +8,7 @@ app.use(express.json())
 const port = 3068
 connect('mongodb://127.0.0.1:27017/task-app')
 .then(()=>{
-    console.log("connected to the db");
+    console.log("connected to the database");
 })
 .catch((err)=>{
     console.log("error connecting to db",err);
