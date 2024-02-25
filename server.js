@@ -108,6 +108,9 @@ const updateTaskvalidationSchema = {
     },
     description:{
         in:['body'],
+        exits:{
+            errorMessage:"description field is required"
+        },
         notEmpty:{
             errorMessage:"description cannot be empty"
         },
@@ -116,6 +119,9 @@ const updateTaskvalidationSchema = {
     },
     status:{
         in:['body'],
+        exits:{
+            errorMessage:"status field is required"
+        },
         notEmpty:{
             errorMessage:"status  cannot be empty"
         },
