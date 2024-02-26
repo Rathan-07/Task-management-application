@@ -3,9 +3,9 @@ const express = require('express')
 const app = express()
 const mongoose = require('mongoose')
 const { Schema, model, connect} = mongoose
-const {checkSchema,validationResult} = require('express-validator')
+const {checkSchema,validationResult,matchedData} = require('express-validator')
 app.use(express.json())
-const port = 3068
+const port = 3069
 connect('mongodb://127.0.0.1:27017/task-app')
 .then(()=>{
     console.log("connected to the database");
@@ -13,9 +13,7 @@ connect('mongodb://127.0.0.1:27017/task-app')
 .catch((err)=>{
     console.log("error connecting to db",err);
 })
-app.listen(port,()=>{
-    console.log("connected to the port_No",port);
-})
+
 
 
 // Task Schema
@@ -45,19 +43,32 @@ const taskValidationSchema = {
             options:{min:5,max:25},
             errorMessage:"title should  have atleast min char "
         },
-        custom:{
-            options:function(value){
-                return Task.findOne({title:value})
-                .then((obj)=>{
-                    if(obj){
+        // custom:{
+        //     options:function(value){
+        //         return Task.findOne({title:value})
+        //         .then((obj)=>{
+        //             if(obj){
                        
-                        throw new Error('title name is already exists')
-                }
-                return true
-                })
+        //                 throw new Error('title name is already exists')
+        //         }
+        //         return true
+        //         })
             
-            }
-        }
+        //     }
+        // },
+        // custom:{
+        //     options:function(value,{req}){
+        //         // const fieldValue = req.body.name;
+        //         const fieldValue = matchedData(req)
+            
+        //         if(typeof fieldValue !== 'string'||!fieldValue.includes(' ')){
+        //             throw new Error("Field should not contain  a space")
+        //             // return res.status(400).json({error:"name field cannot have space"})
+        //         }
+        //         return  true
+        //     }
+        // }
+        
     },
     description:{
         in:['body'],
@@ -108,7 +119,7 @@ const updateTaskvalidationSchema = {
     },
     description:{
         in:['body'],
-        exits:{
+        exists:{
             errorMessage:"description field is required"
         },
         notEmpty:{
@@ -119,17 +130,13 @@ const updateTaskvalidationSchema = {
     },
     status:{
         in:['body'],
-        exits:{
+        exists:{
             errorMessage:"status field is required"
         },
         notEmpty:{
             errorMessage:"status  cannot be empty"
         },
         trim:true,
-        isLength:{
-            options:{min:5,max:25},
-            errorMessage:"title should  have atleast min char "
-        },
         isIn:{
             options:[['pending','inProgress','completed']],
             errorMessage:'status should be one of (pending, inProgress,completed)'
@@ -150,20 +157,41 @@ const idValidationSchema = {
 }
 // Post Request
 
-app.post('/tasks',checkSchema(taskValidationSchema),(req,res)=>{
-    const errors = validationResult(req)
-    if(!errors.isEmpty()){
-        return res.status(400).json({errors:errors.array()})
+// Post Request
+app.post('/tasks', checkSchema(taskValidationSchema), (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
     }
-    const body = req.body
-    Task.create(body)
-    .then((tasks)=>{
-        res.status(201).json(tasks)
-    })
-    .catch((err)=>{
-      res.json(err)  
-    })
-})
+
+    let body = req.body;
+    body.title = modifyTitle(body.title);
+
+    // Check if the title is unique before creating the task
+    Task.findOne({ title: body.title })
+        .then(existingTask => {
+            if (existingTask) {
+                return res.status(400).json({ errors: [{ msg: 'Title name is already taken' }] });
+            }
+
+            // If the title is unique, proceed to create the task
+            Task.create(body)
+                .then(createdTask => {
+                    res.status(201).json(createdTask);
+                })
+                .catch(err => {
+                    res.status(500).json(err);
+                });
+        })
+        .catch(err => {
+            res.status(500).json(err);
+        });
+});
+
+function modifyTitle(value) {
+    return value.trim().toUpperCase();
+}
+
 
 // Get request -all tasks
 app.get('/tasks',(req,res)=>{
@@ -236,4 +264,6 @@ app.delete('/tasks/:id',checkSchema(idValidationSchema),(req,res)=>{
         res.status(500).json({ error:'Internal server error'})
     })
 })
-
+app.listen(port,()=>{
+    console.log("connected to the port_No",port);
+})
