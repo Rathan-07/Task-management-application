@@ -22,7 +22,7 @@ This is a simple Task Management application built with Node.js, Express, and Mo
 1. Clone the repository:
 
 ```bash
-  git clone https://github.com/your-username/task-management-app.git
+  git clone https://github.com/Rathan-07/task-management-app.git
 
 ```
 
